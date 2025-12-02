@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -55,6 +56,6 @@ public class TickTreeResource : TickBehaviour
     private void BeginRespawn(long tick)
     {
         _isRespawning = true;
-        _respawnReadyTick = tick + Mathf.Max(1, respawnTicks);
+        _respawnReadyTick = tick + Math.Max(1L, respawnTicks);
     }
 }
