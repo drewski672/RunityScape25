@@ -70,16 +70,35 @@ namespace Runity.Gameplay.Player
                 return;
             }
 
-            Vector3 stepX = new Vector3(Mathf.Sign(stepsX) * stepSize, 0f, 0f);
-            for (int i = 0; i < Mathf.Abs(stepsX); i++)
+            int diagonalSteps = Mathf.Min(Mathf.Abs(stepsX), Mathf.Abs(stepsZ));
+            int remainingStepsX = Mathf.Abs(stepsX) - diagonalSteps;
+            int remainingStepsZ = Mathf.Abs(stepsZ) - diagonalSteps;
+
+            if (diagonalSteps > 0)
             {
-                tickMover.EnqueueDelta(stepX);
+                Vector3 diagonalDelta = new Vector3(Mathf.Sign(stepsX) * stepSize, 0f, Mathf.Sign(stepsZ) * stepSize);
+                for (int i = 0; i < diagonalSteps; i++)
+                {
+                    tickMover.EnqueueDelta(diagonalDelta);
+                }
             }
 
-            Vector3 stepZ = new Vector3(0f, 0f, Mathf.Sign(stepsZ) * stepSize);
-            for (int i = 0; i < Mathf.Abs(stepsZ); i++)
+            if (remainingStepsX > 0)
             {
-                tickMover.EnqueueDelta(stepZ);
+                Vector3 stepX = new Vector3(Mathf.Sign(stepsX) * stepSize, 0f, 0f);
+                for (int i = 0; i < remainingStepsX; i++)
+                {
+                    tickMover.EnqueueDelta(stepX);
+                }
+            }
+
+            if (remainingStepsZ > 0)
+            {
+                Vector3 stepZ = new Vector3(0f, 0f, Mathf.Sign(stepsZ) * stepSize);
+                for (int i = 0; i < remainingStepsZ; i++)
+                {
+                    tickMover.EnqueueDelta(stepZ);
+                }
             }
         }
 
@@ -97,13 +116,7 @@ namespace Runity.Gameplay.Player
                 return;
             }
 
-            float absX = Mathf.Abs(toTarget.x);
-            float absZ = Mathf.Abs(toTarget.z);
-            Vector3 primaryDirection = absX >= absZ
-                ? new Vector3(Mathf.Sign(toTarget.x), 0f, 0f)
-                : new Vector3(0f, 0f, Mathf.Sign(toTarget.z));
-
-            Quaternion targetRotation = Quaternion.LookRotation(primaryDirection);
+            Quaternion targetRotation = Quaternion.LookRotation(toTarget.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
