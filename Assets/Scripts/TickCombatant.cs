@@ -17,7 +17,40 @@ public class TickCombatant : TickBehaviour
 
     public void SetTarget(TickHealth newTarget)
     {
+        if (target == newTarget)
+        {
+            return;
+        }
+
+        if (target != null)
+        {
+            target.Died -= HandleTargetDied;
+        }
+
         target = newTarget;
+
+        if (target != null)
+        {
+            target.Died += HandleTargetDied;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (target != null)
+        {
+            target.Died -= HandleTargetDied;
+        }
+    }
+
+    private void HandleTargetDied()
+    {
+        if (target != null)
+        {
+            target.Died -= HandleTargetDied;
+        }
+
+        target = null;
     }
 
     protected override void OnTick(long tick)

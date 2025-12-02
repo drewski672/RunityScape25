@@ -13,7 +13,7 @@ public class TickTreeResource : TickBehaviour
 
     private TickHealth _health;
     private bool _isRespawning;
-    private long _respawnReadyTick;
+    private IDisposable _respawnHandle;
 
     public bool IsAvailable => !_isRespawning && _health != null && !_health.IsDead;
 
@@ -21,6 +21,16 @@ public class TickTreeResource : TickBehaviour
     {
         _health = GetComponent<TickHealth>();
         _health.Died += HandleDepleted;
+    }
+
+    private void OnDestroy()
+    {
+        if (_health != null)
+        {
+            _health.Died -= HandleDepleted;
+        }
+
+        _respawnHandle?.Dispose();
     }
 
     public void ApplyChop(int damage, long tick)
@@ -40,10 +50,10 @@ public class TickTreeResource : TickBehaviour
 
     protected override void OnTick(long tick)
     {
-        if (_isRespawning && tick >= _respawnReadyTick)
+        // Safety hook in case other systems reduce health outside of ApplyChop.
+        if (!_isRespawning && _health != null && _health.IsDead)
         {
-            _health.HealFull();
-            _isRespawning = false;
+            BeginRespawn(tick);
         }
     }
 
@@ -55,7 +65,25 @@ public class TickTreeResource : TickBehaviour
 
     private void BeginRespawn(long tick)
     {
+        if (_isRespawning)
+        {
+            return;
+        }
+
         _isRespawning = true;
-        _respawnReadyTick = tick + Math.Max(1L, respawnTicks);
+        _respawnHandle?.Dispose();
+
+        long delayTicks = Math.Max(1L, respawnTicks);
+
+        gameObject.SetActive(false);
+        _respawnHandle = TickManager.Scheduler.Schedule(_ => CompleteRespawn(), delayTicks);
+    }
+
+    private void CompleteRespawn()
+    {
+        _respawnHandle = null;
+        _isRespawning = false;
+        _health.HealFull();
+        gameObject.SetActive(true);
     }
 }
