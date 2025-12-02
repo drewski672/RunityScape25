@@ -25,7 +25,7 @@ public class TickCooldown
     /// </summary>
     public void Start(long currentTick)
     {
-        _nextReadyTick = currentTick + Mathf.Max(1, cooldownTicks);
+        _nextReadyTick = currentTick + Math.Max(1L, cooldownTicks);
     }
 
     /// <summary>
