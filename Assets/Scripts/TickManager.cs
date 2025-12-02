@@ -39,7 +39,18 @@ public class TickManager : MonoBehaviour
     /// </summary>
     public long TickCount { get; private set; }
 
+    /// <summary>
+    /// Convenience accessor for the current global tick count without needing an instance reference.
+    /// </summary>
+    public static long CurrentTick => Instance.TickCount;
+
+    /// <summary>
+    /// Global scheduler for tick-driven actions (movement queues, combat swings, harvesting respawns, etc.).
+    /// </summary>
+    public static TickScheduler Scheduler => Instance._scheduler;
+
     private float _accumulator;
+    private TickScheduler _scheduler;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap() => EnsureInstance();
@@ -56,6 +67,18 @@ public class TickManager : MonoBehaviour
         DontDestroyOnLoad(host);
     }
 
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+        _scheduler = new TickScheduler();
+    }
+
     private void Update()
     {
         _accumulator += Time.deltaTime;
@@ -64,6 +87,7 @@ public class TickManager : MonoBehaviour
         {
             _accumulator -= TickDurationSeconds;
             TickCount++;
+            _scheduler?.OnTick(TickCount);
             Tick?.Invoke(TickCount);
         }
     }
