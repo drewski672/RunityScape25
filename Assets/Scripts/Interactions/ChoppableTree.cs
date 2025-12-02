@@ -4,11 +4,17 @@ using UnityEngine;
 
 namespace Runity.Gameplay.Interactions
 {
+    [RequireComponent(typeof(TickTreeResource))]
     public class ChoppableTree : MonoBehaviour, IInteractable
     {
-        [SerializeField] private int chopCount = 5;
+        private TickTreeResource tree;
 
         public string DisplayName => "Tree";
+
+        private void Awake()
+        {
+            tree = GetComponent<TickTreeResource>();
+        }
 
         public IEnumerable<ContextMenuAction> GetActions(PlayerInteractor interactor)
         {
@@ -17,20 +23,15 @@ namespace Runity.Gameplay.Interactions
 
         public void Interact(PlayerInteractor interactor)
         {
-            if (chopCount <= 0)
+            TickWoodcutter woodcutter = interactor.GetComponent<TickWoodcutter>();
+            if (woodcutter == null)
             {
-                Debug.Log("The tree is depleted.");
+                Debug.LogWarning("Player has no TickWoodcutter component to chop with.");
                 return;
             }
 
-            chopCount--;
-            Debug.Log($"Chopped the tree. {chopCount} swings remaining.");
-
-            if (chopCount == 0)
-            {
-                gameObject.SetActive(false);
-                Debug.Log("Tree has been chopped down.");
-            }
+            woodcutter.SetTarget(tree);
+            Debug.Log("You start chopping the tree on the tick cadence.");
         }
     }
 }

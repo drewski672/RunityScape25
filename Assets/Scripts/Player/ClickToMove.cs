@@ -2,81 +2,90 @@ using UnityEngine;
 
 namespace Runity.Gameplay.Player
 {
-    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(TickMover))]
     public class ClickToMove : MonoBehaviour
     {
-        [SerializeField] private float moveSpeed = 6f;
         [SerializeField] private float rotationSpeed = 10f;
-        [SerializeField] private bool useGravity = false;
-        [SerializeField] private float gravity = -9.81f;
 
-        private CharacterController characterController;
+        private TickMover tickMover;
         private Vector3? destination;
-        private Vector3 velocity;
 
-        public bool HasDestination => destination.HasValue;
+        public bool HasDestination => destination.HasValue || (tickMover != null && tickMover.PendingSteps > 0);
 
         private void Awake()
         {
-            characterController = GetComponent<CharacterController>();
-        }
-
-        private void Update()
-        {
-            ApplyGravity();
-            MoveTowardsDestination();
+            tickMover = GetComponent<TickMover>();
         }
 
         public void MoveTo(Vector3 worldPosition)
         {
             destination = new Vector3(worldPosition.x, transform.position.y, worldPosition.z);
+            QueueStepsToDestination();
         }
 
         public void ClearDestination()
         {
             destination = null;
+            tickMover?.ClearSteps();
         }
 
-        private void MoveTowardsDestination()
+        private void LateUpdate()
+        {
+            FaceDestination();
+
+            if (destination.HasValue && tickMover != null && tickMover.PendingSteps == 0)
+            {
+                // Snap to the exact destination once all queued tick steps are completed.
+                transform.position = new Vector3(destination.Value.x, transform.position.y, destination.Value.z);
+                destination = null;
+            }
+        }
+
+        private void QueueStepsToDestination()
+        {
+            if (tickMover == null || !destination.HasValue)
+            {
+                return;
+            }
+
+            tickMover.ClearSteps();
+
+            Vector3 target = destination.Value;
+            Vector3 start = transform.position;
+            Vector3 direction = new Vector3(target.x - start.x, 0f, target.z - start.z);
+
+            float remaining = direction.magnitude;
+            if (remaining < 0.01f)
+            {
+                destination = null;
+                return;
+            }
+
+            Vector3 stepDirection = direction.normalized;
+            while (remaining > 0f)
+            {
+                float step = Mathf.Min(remaining, tickMover.StepDistance);
+                tickMover.EnqueueDelta(stepDirection * step);
+                remaining -= step;
+            }
+        }
+
+        private void FaceDestination()
         {
             if (!destination.HasValue)
             {
-                characterController.Move(velocity * Time.deltaTime);
                 return;
             }
 
             Vector3 target = destination.Value;
-            Vector3 direction = target - transform.position;
-            Vector3 horizontalDirection = new Vector3(direction.x, 0f, direction.z);
-
-            if (horizontalDirection.sqrMagnitude < 0.01f)
+            Vector3 direction = new Vector3(target.x - transform.position.x, 0f, target.z - transform.position.z);
+            if (direction.sqrMagnitude < 0.0001f)
             {
-                destination = null;
-                characterController.Move(velocity * Time.deltaTime);
                 return;
             }
 
-            Vector3 move = horizontalDirection.normalized * moveSpeed;
-            Quaternion targetRotation = Quaternion.LookRotation(horizontalDirection);
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-
-            characterController.Move((move + velocity) * Time.deltaTime);
-        }
-
-        private void ApplyGravity()
-        {
-            if (!useGravity)
-            {
-                velocity = Vector3.zero;
-                return;
-            }
-
-            if (characterController.isGrounded && velocity.y < 0f)
-            {
-                velocity.y = -2f;
-            }
-
-            velocity.y += gravity * Time.deltaTime;
         }
     }
 }

@@ -26,18 +26,16 @@ namespace Runity.Gameplay.Setup
         {
             GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             player.name = "Player";
-            Destroy(player.GetComponent<CapsuleCollider>());
             player.transform.position = new Vector3(0f, 1f, 0f);
 
-            CharacterController controller = player.AddComponent<CharacterController>();
-            controller.height = 2f;
-            controller.radius = 0.4f;
-            controller.center = new Vector3(0f, 1f, 0f);
-
+            player.AddComponent<TickMover>();
             ClickToMove movement = player.AddComponent<ClickToMove>();
             interactor = player.AddComponent<PlayerInteractor>();
             interactor.ContextMenu = menu;
             interactor.GroundMask = groundLayer;
+
+            player.AddComponent<TickCombatant>();
+            player.AddComponent<TickWoodcutter>();
 
             return player;
         }
@@ -79,6 +77,8 @@ namespace Runity.Gameplay.Setup
             tree.name = "Tree";
             tree.transform.position = new Vector3(4f, 0.5f, 2f);
             tree.transform.localScale = new Vector3(1f, 1.5f, 1f);
+            tree.AddComponent<TickHealth>();
+            tree.AddComponent<TickTreeResource>();
             tree.AddComponent<ChoppableTree>();
         }
 
@@ -87,6 +87,7 @@ namespace Runity.Gameplay.Setup
             GameObject dummy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             dummy.name = "Training Dummy";
             dummy.transform.position = new Vector3(-4f, 1f, 2f);
+            dummy.AddComponent<TickHealth>();
             dummy.AddComponent<DummyEnemy>();
         }
 

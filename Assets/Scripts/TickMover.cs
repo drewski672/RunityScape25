@@ -17,6 +17,8 @@ public class TickMover : TickBehaviour
 
     public int PendingSteps => _stepQueue.Count;
 
+    public float StepDistance => stepDistance;
+
     public void ClearSteps() => _stepQueue.Clear();
 
     public void EnqueueStep(Vector3 direction)
@@ -26,7 +28,17 @@ public class TickMover : TickBehaviour
             return;
         }
 
-        _stepQueue.Enqueue(direction.normalized);
+        _stepQueue.Enqueue(direction.normalized * stepDistance);
+    }
+
+    public void EnqueueDelta(Vector3 delta)
+    {
+        if (delta == Vector3.zero)
+        {
+            return;
+        }
+
+        _stepQueue.Enqueue(delta);
     }
 
     public void EnqueueSteps(IEnumerable<Vector3> directions)
@@ -49,8 +61,7 @@ public class TickMover : TickBehaviour
             return;
         }
 
-        var direction = _stepQueue.Dequeue();
-        var delta = direction * stepDistance;
+        var delta = _stepQueue.Dequeue();
         var targetPosition = transform.position + delta;
 
         if (snapToGround && Physics.Raycast(targetPosition + Vector3.up, Vector3.down, out var hitInfo, 5f))
