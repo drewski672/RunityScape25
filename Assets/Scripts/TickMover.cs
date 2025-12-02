@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,6 +16,10 @@ public class TickMover : TickBehaviour
 
     private readonly Queue<Vector3> _stepQueue = new();
 
+    [SerializeField]
+    private float additionalGroundOffset = 0.05f;
+
+    private float _groundOffset;
     private Vector3 _startPosition;
     private Vector3 _targetPosition;
     private float _interpolationTime;
@@ -70,8 +75,14 @@ public class TickMover : TickBehaviour
 
     private void Awake()
     {
+        CacheGroundOffset();
         _startPosition = transform.position;
         _targetPosition = transform.position;
+    }
+
+    private void OnValidate()
+    {
+        CacheGroundOffset();
     }
 
     private void Update()
@@ -119,13 +130,38 @@ public class TickMover : TickBehaviour
 
     private bool TryGetGroundedPosition(Vector3 position, out Vector3 groundedPosition)
     {
-        if (Physics.Raycast(position + Vector3.up, Vector3.down, out var hitInfo, 5f))
+        // Cast from above the actor and ignore any hits on the actor itself so we snap to terrain.
+        float rayHeight = Math.Max(_groundOffset + 0.5f, 1f);
+        float rayLength = rayHeight + 5f;
+        Vector3 origin = position + Vector3.up * rayHeight;
+
+        var hits = Physics.RaycastAll(origin, Vector3.down, rayLength, Physics.AllLayers, QueryTriggerInteraction.Ignore);
+        if (hits.Length > 0)
         {
-            groundedPosition = new Vector3(position.x, hitInfo.point.y, position.z);
-            return true;
+            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            foreach (var hit in hits)
+            {
+                if (hit.collider != null && hit.collider.transform == transform)
+                {
+                    continue;
+                }
+
+                groundedPosition = new Vector3(position.x, hit.point.y + _groundOffset, position.z);
+                return true;
+            }
         }
 
         groundedPosition = position;
         return false;
+    }
+
+    private void CacheGroundOffset()
+    {
+        _groundOffset = additionalGroundOffset;
+
+        if (TryGetComponent<Collider>(out var collider))
+        {
+            _groundOffset += collider.bounds.extents.y;
+        }
     }
 }
