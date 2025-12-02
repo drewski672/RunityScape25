@@ -15,11 +15,25 @@ public class TickMover : TickBehaviour
 
     private readonly Queue<Vector3> _stepQueue = new();
 
+    private Vector3 _startPosition;
+    private Vector3 _targetPosition;
+    private float _interpolationTime;
+    private bool _isInterpolating;
+
     public int PendingSteps => _stepQueue.Count;
 
     public float StepDistance => stepDistance;
 
-    public void ClearSteps() => _stepQueue.Clear();
+    public bool IsInterpolating => _isInterpolating;
+
+    public void ClearSteps()
+    {
+        _stepQueue.Clear();
+        _isInterpolating = false;
+        _interpolationTime = 0f;
+        _startPosition = transform.position;
+        _targetPosition = transform.position;
+    }
 
     public void EnqueueStep(Vector3 direction)
     {
@@ -54,6 +68,34 @@ public class TickMover : TickBehaviour
         }
     }
 
+    private void Awake()
+    {
+        _startPosition = transform.position;
+        _targetPosition = transform.position;
+    }
+
+    private void Update()
+    {
+        if (_isInterpolating)
+        {
+            _interpolationTime += Time.deltaTime;
+            float t = Mathf.Clamp01(_interpolationTime / TickManager.TickDurationSeconds);
+            transform.position = Vector3.Lerp(_startPosition, _targetPosition, t);
+
+            if (t >= 1f)
+            {
+                _isInterpolating = false;
+            }
+        }
+        else if (snapToGround)
+        {
+            if (TryGetGroundedPosition(transform.position, out var grounded))
+            {
+                transform.position = grounded;
+            }
+        }
+    }
+
     protected override void OnTick(long tick)
     {
         if (_stepQueue.Count == 0)
@@ -64,11 +106,26 @@ public class TickMover : TickBehaviour
         var delta = _stepQueue.Dequeue();
         var targetPosition = transform.position + delta;
 
-        if (snapToGround && Physics.Raycast(targetPosition + Vector3.up, Vector3.down, out var hitInfo, 5f))
+        if (snapToGround && TryGetGroundedPosition(targetPosition, out var grounded))
         {
-            targetPosition.y = hitInfo.point.y;
+            targetPosition = grounded;
         }
 
-        transform.position = targetPosition;
+        _startPosition = transform.position;
+        _targetPosition = targetPosition;
+        _interpolationTime = 0f;
+        _isInterpolating = true;
+    }
+
+    private bool TryGetGroundedPosition(Vector3 position, out Vector3 groundedPosition)
+    {
+        if (Physics.Raycast(position + Vector3.up, Vector3.down, out var hitInfo, 5f))
+        {
+            groundedPosition = new Vector3(position.x, hitInfo.point.y, position.z);
+            return true;
+        }
+
+        groundedPosition = position;
+        return false;
     }
 }

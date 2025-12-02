@@ -33,7 +33,7 @@ namespace Runity.Gameplay.Player
         {
             FaceDestination();
 
-            if (destination.HasValue && tickMover != null && tickMover.PendingSteps == 0)
+            if (destination.HasValue && tickMover != null && tickMover.PendingSteps == 0 && !tickMover.IsInterpolating)
             {
                 // Snap to the exact destination once all queued tick steps are completed.
                 transform.position = new Vector3(destination.Value.x, transform.position.y, destination.Value.z);
