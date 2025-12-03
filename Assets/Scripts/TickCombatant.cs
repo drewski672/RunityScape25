@@ -30,6 +30,15 @@ public class TickCombatant : TickBehaviour
             return;
         }
 
+        if (newTarget == null)
+        {
+            Debug.Log($"{name} clears their target.");
+        }
+        else
+        {
+            Debug.Log($"{name} targets {newTarget.name}.");
+        }
+
         if (target != null)
         {
             target.Died -= HandleTargetDied;
@@ -64,6 +73,7 @@ public class TickCombatant : TickBehaviour
         if (target != null)
         {
             target.Died -= HandleTargetDied;
+            Debug.Log($"{name} stops fighting {target.name} because they died.");
         }
 
         target = null;
@@ -88,10 +98,18 @@ public class TickCombatant : TickBehaviour
 
     private void PerformAttack(long tick, bool allowCounterAttack)
     {
+        TickHealth targetHealth = target;
+        if (targetHealth == null)
+        {
+            return;
+        }
+
         _lastAttackTick = tick;
         _nextAttackTick = tick + turnLengthTicks;
         _waitForInitiator = false;
-        target.TakeDamage(attackDamage);
+        targetHealth.TakeDamage(attackDamage);
+
+        Debug.Log($"[Tick {tick}] {name} hits {targetHealth.name} for {attackDamage} damage ({targetHealth.CurrentHealth}/{targetHealth.MaxHealth} HP left).");
 
         if (!allowCounterAttack || target == null || target.IsDead)
         {
