@@ -19,6 +19,9 @@ public class TickCombatant : TickBehaviour
     [SerializeField]
     private TickHealth target;
 
+    public bool HasActiveTarget => target != null && !target.IsDead;
+    public TickHealth CurrentTarget => target;
+
     private long _nextAttackTick = long.MaxValue;
     private long _lastAttackTick = -1;
     private bool _waitForInitiator;

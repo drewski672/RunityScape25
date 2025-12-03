@@ -13,11 +13,15 @@ namespace Runity.Gameplay.Interactions
         private const float InteractionRange = 1.5f;
 
         [SerializeField] private int respawnTicks = 5;
+        [SerializeField] private bool isAggro = false;
+        [SerializeField] private float aggroRange = InteractionRange;
 
         private TickHealth health;
         private TickCombatant dummyCombatant;
         private IDisposable respawnHandle;
         private Coroutine pendingInteraction;
+        private PlayerInteractor player;
+        private TickHealth playerHealth;
 
         public string DisplayName => "Training Dummy";
 
@@ -26,6 +30,25 @@ namespace Runity.Gameplay.Interactions
             health = GetComponent<TickHealth>();
             dummyCombatant = GetComponent<TickCombatant>();
             health.Died += HandleDeath;
+        }
+
+        private void Update()
+        {
+            if (!isAggro || health == null || dummyCombatant == null || health.IsDead || dummyCombatant.HasActiveTarget)
+            {
+                return;
+            }
+
+            EnsurePlayerReferences();
+            if (player == null || playerHealth == null || playerHealth.IsDead)
+            {
+                return;
+            }
+
+            if (IsWithinRange(player.transform.position, aggroRange))
+            {
+                dummyCombatant.SetTarget(playerHealth, takeFirstTurnImmediately: true);
+            }
         }
 
         private void OnDestroy()
@@ -93,7 +116,7 @@ namespace Runity.Gameplay.Interactions
                     break;
                 }
 
-                if (IsWithinRange(player.position))
+                if (IsWithinRange(player.position, InteractionRange))
                 {
                     combatant.SetTarget(health);
 
@@ -118,11 +141,11 @@ namespace Runity.Gameplay.Interactions
             pendingInteraction = null;
         }
 
-        private bool IsWithinRange(Vector3 playerPosition)
+        private bool IsWithinRange(Vector3 playerPosition, float range)
         {
             Vector2 player2D = new Vector2(playerPosition.x, playerPosition.z);
             Vector2 dummy2D = new Vector2(transform.position.x, transform.position.z);
-            return Vector2.Distance(player2D, dummy2D) <= InteractionRange;
+            return Vector2.Distance(player2D, dummy2D) <= range;
         }
 
         private Vector3 GetAdjacentDestination(Vector3 playerPosition)
@@ -144,9 +167,24 @@ namespace Runity.Gameplay.Interactions
             return new Vector3(target2D.x, playerPosition.y, target2D.y);
         }
 
+        private void EnsurePlayerReferences()
+        {
+            if (player != null)
+            {
+                return;
+            }
+
+            player = FindObjectOfType<PlayerInteractor>();
+            if (player != null)
+            {
+                playerHealth = player.GetComponent<TickHealth>();
+            }
+        }
+
         private void Respawn()
         {
             respawnHandle = null;
+            dummyCombatant?.SetTarget(null);
             health.HealFull();
             gameObject.SetActive(true);
             Debug.Log("Dummy respawned.");
