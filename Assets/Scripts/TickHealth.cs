@@ -17,6 +17,7 @@ public class TickHealth : MonoBehaviour
     public bool IsDead => _currentHealth <= 0;
 
     public event Action<int> HealthChanged;
+    public event Action<int, TickCombatant> Damaged;
     public event Action Died;
 
     private void Awake()
@@ -43,12 +44,18 @@ public class TickHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        TakeDamage(amount, null);
+    }
+
+    public void TakeDamage(int amount, TickCombatant attacker)
+    {
         if (IsDead)
         {
             return;
         }
 
         _currentHealth = Mathf.Max(0, _currentHealth - Mathf.Max(0, amount));
+        Damaged?.Invoke(amount, attacker);
         HealthChanged?.Invoke(_currentHealth);
 
         if (_currentHealth <= 0)

@@ -120,17 +120,7 @@ public class TickCombatant : TickBehaviour
             return;
         }
 
-        TickCombatant targetCombatant = target.GetComponent<TickCombatant>();
-        targetCombatant?.NotifyAttacked(tick);
-    }
-
-    private void NotifyAttacked(long tick)
-    {
-        _waitForInitiator = false;
-        long desiredNextAttack = tick + turnLengthTicks;
-        if (desiredNextAttack > _nextAttackTick)
-        {
-            _nextAttackTick = desiredNextAttack;
-        }
+        attackCooldown.Start(tick);
+        target.TakeDamage(attackDamage, this);
     }
 }

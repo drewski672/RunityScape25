@@ -20,6 +20,7 @@ namespace Runity.Gameplay.Setup
             CreateGround();
             CreateTree();
             CreateDummy();
+            CreateNeutralEnemy();
         }
 
         private GameObject SpawnPlayer(ContextMenuUI menu, out PlayerInteractor interactor)
@@ -34,9 +35,7 @@ namespace Runity.Gameplay.Setup
             interactor.ContextMenu = menu;
             interactor.GroundMask = groundLayer;
 
-            TickHealth health = player.AddComponent<TickHealth>();
-            health.SetMaxHealth(20);
-
+            player.AddComponent<TickHealth>();
             player.AddComponent<TickCombatant>();
             player.AddComponent<TickWoodcutter>();
 
@@ -94,6 +93,28 @@ namespace Runity.Gameplay.Setup
             health.SetMaxHealth(10);
             dummy.AddComponent<TickCombatant>();
             dummy.AddComponent<DummyEnemy>();
+
+            MeshRenderer renderer = dummy.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.material.color = Color.green;
+            }
+        }
+
+        private void CreateNeutralEnemy()
+        {
+            GameObject neutral = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            neutral.name = "Neutral Enemy";
+            neutral.transform.position = new Vector3(-1f, 1f, -2f);
+            neutral.AddComponent<TickHealth>();
+            neutral.AddComponent<TickCombatant>();
+            neutral.AddComponent<NeutralEnemy>();
+
+            MeshRenderer renderer = neutral.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.material.color = Color.yellow;
+            }
         }
 
         private int LayerMaskToLayer(LayerMask mask)
