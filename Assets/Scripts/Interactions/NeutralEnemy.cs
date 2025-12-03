@@ -152,6 +152,8 @@ namespace Runity.Gameplay.Interactions
         {
             combatant.SetTarget(null);
             Debug.Log($"The {DisplayName.ToLower()} is defeated.");
+
+            Destroy(gameObject);
         }
     }
 }
