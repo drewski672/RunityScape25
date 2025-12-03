@@ -9,7 +9,7 @@ namespace Runity.Gameplay.Interactions
     [RequireComponent(typeof(TickHealth))]
     public class DummyEnemy : MonoBehaviour, IInteractable
     {
-        private const float InteractionRange = 1f;
+        private const float InteractionRange = 1.5f;
 
         [SerializeField] private int respawnTicks = 5;
 

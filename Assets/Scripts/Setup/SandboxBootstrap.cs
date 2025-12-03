@@ -34,6 +34,9 @@ namespace Runity.Gameplay.Setup
             interactor.ContextMenu = menu;
             interactor.GroundMask = groundLayer;
 
+            TickHealth health = player.AddComponent<TickHealth>();
+            health.SetMaxHealth(20);
+
             player.AddComponent<TickCombatant>();
             player.AddComponent<TickWoodcutter>();
 
@@ -87,7 +90,8 @@ namespace Runity.Gameplay.Setup
             GameObject dummy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             dummy.name = "Training Dummy";
             dummy.transform.position = new Vector3(-4f, 1f, 2f);
-            dummy.AddComponent<TickHealth>();
+            TickHealth health = dummy.AddComponent<TickHealth>();
+            health.SetMaxHealth(10);
             dummy.AddComponent<DummyEnemy>();
         }
 
