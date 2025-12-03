@@ -9,8 +9,7 @@ public class TickCombatant : TickBehaviour
     private const int DefaultTurnLengthTicks = 4;
 
     [SerializeField]
-    [Min(1)]
-    private int turnLengthTicks = DefaultTurnLengthTicks;
+    private TickCooldown _attackCooldown = new TickCooldown();
 
     [SerializeField]
     [Min(1)]
@@ -64,8 +63,10 @@ public class TickCombatant : TickBehaviour
         }
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
+        base.OnDisable();
+
         if (target != null)
         {
             target.Died -= HandleTargetDied;
@@ -92,35 +93,12 @@ public class TickCombatant : TickBehaviour
             return;
         }
 
-        PerformAttack(tick);
-    }
-
-    private bool CanAct(long tick)
-    {
-        return target != null && !_waitForInitiator && !target.IsDead && tick >= _nextAttackTick && _lastAttackTick != tick;
-    }
-
-    private void PerformAttack(long tick)
-    {
-        TickHealth targetHealth = target;
-        if (targetHealth == null)
+        if (!_attackCooldown.IsReady(tick))
         {
             return;
         }
 
-        _lastAttackTick = tick;
-        _nextAttackTick = tick + turnLengthTicks;
-        _waitForInitiator = false;
-        targetHealth.TakeDamage(attackDamage);
-
-        Debug.Log($"[Tick {tick}] {name} hits {targetHealth.name} for {attackDamage} damage ({targetHealth.CurrentHealth}/{targetHealth.MaxHealth} HP left).");
-
-        if (target == null || target.IsDead)
-        {
-            return;
-        }
-
-        attackCooldown.Start(tick);
+        _attackCooldown.Start(tick);
         target.TakeDamage(attackDamage, this);
     }
 }
