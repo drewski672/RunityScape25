@@ -7,6 +7,7 @@ using UnityEngine;
 namespace Runity.Gameplay.Interactions
 {
     [RequireComponent(typeof(TickHealth))]
+    [RequireComponent(typeof(TickCombatant))]
     public class DummyEnemy : MonoBehaviour, IInteractable
     {
         private const float InteractionRange = 1.5f;
@@ -14,6 +15,7 @@ namespace Runity.Gameplay.Interactions
         [SerializeField] private int respawnTicks = 5;
 
         private TickHealth health;
+        private TickCombatant dummyCombatant;
         private IDisposable respawnHandle;
         private Coroutine pendingInteraction;
 
@@ -22,6 +24,7 @@ namespace Runity.Gameplay.Interactions
         private void Awake()
         {
             health = GetComponent<TickHealth>();
+            dummyCombatant = GetComponent<TickCombatant>();
             health.Died += HandleDeath;
         }
 
@@ -50,9 +53,15 @@ namespace Runity.Gameplay.Interactions
             }
 
             TickCombatant combatant = interactor.GetComponent<TickCombatant>();
+            TickHealth playerHealth = interactor.GetComponent<TickHealth>();
             if (combatant == null)
             {
                 Debug.LogWarning("Player has no TickCombatant to attack with.");
+                return;
+            }
+            else if (playerHealth == null)
+            {
+                Debug.LogWarning("Player has no TickHealth component for combat.");
                 return;
             }
 
@@ -61,10 +70,10 @@ namespace Runity.Gameplay.Interactions
                 StopCoroutine(pendingInteraction);
             }
 
-            pendingInteraction = StartCoroutine(MoveIntoRangeAndAttack(interactor, combatant));
+            pendingInteraction = StartCoroutine(MoveIntoRangeAndAttack(interactor, combatant, playerHealth));
         }
 
-        private IEnumerator MoveIntoRangeAndAttack(PlayerInteractor interactor, TickCombatant combatant)
+        private IEnumerator MoveIntoRangeAndAttack(PlayerInteractor interactor, TickCombatant combatant, TickHealth playerHealth)
         {
             Transform player = interactor.transform;
             ClickToMove mover = interactor.GetComponent<ClickToMove>();
@@ -87,6 +96,12 @@ namespace Runity.Gameplay.Interactions
                 if (IsWithinRange(player.position))
                 {
                     combatant.SetTarget(health);
+
+                    if (dummyCombatant != null)
+                    {
+                        dummyCombatant.SetTarget(playerHealth, takeFirstTurnImmediately: false);
+                    }
+
                     Debug.Log("You focus on attacking the training dummy.");
                     break;
                 }

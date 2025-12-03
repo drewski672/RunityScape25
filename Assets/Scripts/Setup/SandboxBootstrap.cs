@@ -92,6 +92,7 @@ namespace Runity.Gameplay.Setup
             dummy.transform.position = new Vector3(-4f, 1f, 2f);
             TickHealth health = dummy.AddComponent<TickHealth>();
             health.SetMaxHealth(10);
+            dummy.AddComponent<TickCombatant>();
             dummy.AddComponent<DummyEnemy>();
         }
 
