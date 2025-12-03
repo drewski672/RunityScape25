@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Runity.Gameplay.Player;
@@ -12,9 +13,11 @@ namespace Runity.Gameplay.Interactions
         private const float InteractionRange = 1f;
 
         [SerializeField] private string displayName = "Neutral Opponent";
+        [SerializeField] private int respawnTicks = 5;
 
         private TickHealth health;
         private TickCombatant combatant;
+        private IDisposable respawnHandle;
         private Coroutine pendingInteraction;
 
         public string DisplayName => displayName;
@@ -31,6 +34,7 @@ namespace Runity.Gameplay.Interactions
         {
             health.Damaged -= HandleDamaged;
             health.Died -= HandleDeath;
+            respawnHandle?.Dispose();
             if (pendingInteraction != null)
             {
                 StopCoroutine(pendingInteraction);
@@ -151,9 +155,19 @@ namespace Runity.Gameplay.Interactions
         private void HandleDeath()
         {
             combatant.SetTarget(null);
-            Debug.Log($"The {DisplayName.ToLower()} is defeated.");
+            Debug.Log($"The {DisplayName.ToLower()} is defeated. It will return shortly.");
 
-            Destroy(gameObject);
+            gameObject.SetActive(false);
+            respawnHandle = TickManager.Scheduler.Schedule(_ => Respawn(), respawnTicks);
+        }
+
+        private void Respawn()
+        {
+            respawnHandle = null;
+            combatant.SetTarget(null);
+            health.HealFull();
+            gameObject.SetActive(true);
+            Debug.Log($"The {DisplayName.ToLower()} has returned.");
         }
     }
 }
