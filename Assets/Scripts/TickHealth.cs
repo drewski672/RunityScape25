@@ -24,6 +24,20 @@ public class TickHealth : MonoBehaviour
         _currentHealth = Mathf.Max(1, maxHealth);
     }
 
+    public void SetMaxHealth(int amount, bool heal = true)
+    {
+        maxHealth = Mathf.Max(1, amount);
+
+        if (heal)
+        {
+            HealFull();
+            return;
+        }
+
+        _currentHealth = Mathf.Min(_currentHealth, maxHealth);
+        HealthChanged?.Invoke(_currentHealth);
+    }
+
     public void HealFull()
     {
         _currentHealth = maxHealth;

@@ -11,6 +11,9 @@ public class TickTreeResource : TickBehaviour
     [SerializeField]
     private long respawnTicks = 10;
 
+    [SerializeField]
+    private int logsPerTree = 5;
+
     private TickHealth _health;
     private bool _isRespawning;
     private IDisposable _respawnHandle;
@@ -20,6 +23,7 @@ public class TickTreeResource : TickBehaviour
     private void Awake()
     {
         _health = GetComponent<TickHealth>();
+        _health.SetMaxHealth(Mathf.Max(1, logsPerTree));
         _health.Died += HandleDepleted;
     }
 
@@ -33,18 +37,19 @@ public class TickTreeResource : TickBehaviour
         _respawnHandle?.Dispose();
     }
 
-    public void ApplyChop(int damage, long tick)
+    public void ApplyChop(int damage)
     {
         if (!IsAvailable)
         {
             return;
         }
 
-        _health.TakeDamage(Mathf.Max(0, damage));
+        _health.TakeDamage(Mathf.Max(1, damage));
+        Debug.Log("You gather a log.");
 
         if (_health.IsDead)
         {
-            BeginRespawn(tick);
+            BeginRespawn(TickManager.CurrentTick);
         }
     }
 
