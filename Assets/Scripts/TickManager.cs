@@ -49,7 +49,10 @@ public class TickManager : MonoBehaviour
     /// </summary>
     public static TickScheduler Scheduler => Instance._scheduler;
 
-    private float _accumulator;
+    // Use doubles and Unity's realtime clock so the 0.6s cadence stays aligned to wall-clock time
+    // regardless of Time.timeScale or frame-rate hiccups.
+    private double _accumulator;
+    private double _lastUpdateTime;
     private TickScheduler _scheduler;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -77,11 +80,15 @@ public class TickManager : MonoBehaviour
 
         _instance = this;
         _scheduler = new TickScheduler();
+        _lastUpdateTime = Time.realtimeSinceStartupAsDouble;
     }
 
     private void Update()
     {
-        _accumulator += Time.deltaTime;
+        // Drive ticks from realtime so they always represent 600ms of wall-clock time like OSRS.
+        double now = Time.realtimeSinceStartupAsDouble;
+        _accumulator += now - _lastUpdateTime;
+        _lastUpdateTime = now;
 
         while (_accumulator >= TickDurationSeconds)
         {
@@ -95,7 +102,7 @@ public class TickManager : MonoBehaviour
     /// <summary>
     /// Returns the amount of time remaining until the next tick fires.
     /// </summary>
-    public float TimeUntilNextTick => Mathf.Max(TickDurationSeconds - _accumulator, 0f);
+    public float TimeUntilNextTick => Mathf.Max((float)(TickDurationSeconds - _accumulator), 0f);
 
     private void OnDestroy()
     {
