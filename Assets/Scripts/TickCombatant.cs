@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Simple turn-based combat loop. Each combatant swings once per turn window and immediately invites a
-/// counter-attack so both parties act every turn with the initiator striking first.
+/// Simple turn-based combat loop. Each combatant swings once per turn window and unlocks their target's next
+/// attack window so turns alternate cleanly after the initiator strikes first.
 /// </summary>
 public class TickCombatant : TickBehaviour
 {
@@ -54,7 +54,8 @@ public class TickCombatant : TickBehaviour
             target.Died += HandleTargetDied;
             _lastAttackTick = -1;
             _waitForInitiator = !takeFirstTurnImmediately;
-            _nextAttackTick = TickManager.CurrentTick;
+            long startingTick = TickManager.CurrentTick;
+            _nextAttackTick = startingTick + (takeFirstTurnImmediately ? 0 : turnLengthTicks);
         }
         else
         {
@@ -91,7 +92,7 @@ public class TickCombatant : TickBehaviour
             return;
         }
 
-        PerformAttack(tick, allowCounterAttack: true);
+        PerformAttack(tick);
     }
 
     private bool CanAct(long tick)
@@ -99,7 +100,7 @@ public class TickCombatant : TickBehaviour
         return target != null && !_waitForInitiator && !target.IsDead && tick >= _nextAttackTick && _lastAttackTick != tick;
     }
 
-    private void PerformAttack(long tick, bool allowCounterAttack)
+    private void PerformAttack(long tick)
     {
         TickHealth targetHealth = target;
         if (targetHealth == null)
@@ -114,24 +115,22 @@ public class TickCombatant : TickBehaviour
 
         Debug.Log($"[Tick {tick}] {name} hits {targetHealth.name} for {attackDamage} damage ({targetHealth.CurrentHealth}/{targetHealth.MaxHealth} HP left).");
 
-        if (!allowCounterAttack || target == null || target.IsDead)
+        if (target == null || target.IsDead)
         {
             return;
         }
 
         TickCombatant targetCombatant = target.GetComponent<TickCombatant>();
-        targetCombatant?.ReceiveCounterAttack(tick);
+        targetCombatant?.NotifyAttacked(tick);
     }
 
-    private void ReceiveCounterAttack(long tick)
+    private void NotifyAttacked(long tick)
     {
         _waitForInitiator = false;
-
-        if (!CanAct(tick))
+        long desiredNextAttack = tick + turnLengthTicks;
+        if (desiredNextAttack > _nextAttackTick)
         {
-            return;
+            _nextAttackTick = desiredNextAttack;
         }
-
-        PerformAttack(tick, allowCounterAttack: false);
     }
 }
