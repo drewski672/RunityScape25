@@ -6,7 +6,8 @@ using UnityEngine;
 /// </summary>
 public class TickCombatant : TickBehaviour
 {
-    private const int DefaultTurnLengthTicks = 4;
+    [SerializeField, Min(1)]
+    private int turnLengthTicks = 1;
 
     [SerializeField]
     private TickCooldown _attackCooldown = new TickCooldown();
@@ -88,7 +89,12 @@ public class TickCombatant : TickBehaviour
 
     protected override void OnTick(long tick)
     {
-        if (!CanAct(tick))
+        if ((tick % turnLengthTicks) != 0)
+        {
+            return;
+        }
+
+        if (!CanAct())
         {
             return;
         }
@@ -100,5 +106,10 @@ public class TickCombatant : TickBehaviour
 
         _attackCooldown.Start(tick);
         target.TakeDamage(attackDamage, this);
+    }
+
+    private bool CanAct()
+    {
+        return target != null && !target.IsDead;
     }
 }
